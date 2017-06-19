@@ -1,0 +1,68 @@
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:security="http://www.springframework.org/schema/security"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans
+       http://www.springframework.org/schema/beans/spring-beans.xsd
+       http://www.springframework.org/schema/security
+       http://www.springframework.org/schema/security/spring-security.xsd">
+
+	<security:http auto-config="true">
+		<security:form-login login-page="/login.jsp"
+			authentication-failure-url="/error.jsp" login-processing-url="/login.do"
+			password-parameter="password" username-parameter="username" />
+		<security:intercept-url pattern="/login.jsp"
+			access="IS_AUTHENTICATED_ANONYMOUSLY" />
+		<security:intercept-url pattern="/error.jsp"
+			access="IS_AUTHENTICATED_ANONYMOUSLY" />
+		<security:intercept-url pattern="/**" access="ROLE_ADMIN" />
+
+		<!-- remember me功能 -->
+		<security:remember-me key="elim" />
+
+		<!-- session单点登录设置 -->
+		<security:session-management   
+        session-authentication-strategy-ref="sessionAuthenticationStrategy"   
+        invalid-session-url="/expired.jsp"/>
+		
+	</security:http>
+
+	<!-- sessionManagementFilter -->  
+	<bean id="concurrencyFilter"  
+	    class="org.springframework.security.web.session.ConcurrentSessionFilter">  
+	    <property name="sessionRegistry" ref="sessionRegistry" />  
+	    <property name="expiredUrl" value="/expired.jsp" />  
+	</bean>  
+	<bean id="sessionAuthenticationStrategy"  
+	    class="org.springframework.security.web.authentication.session.ConcurrentSessionControlStrategy">  
+	    <constructor-arg name="sessionRegistry"  
+	        ref="sessionRegistry" />  
+	    <property name="maximumSessions" value="1" />  
+	</bean>  
+	<bean id="sessionRegistry"  
+	    class="org.springframework.security.core.session.SessionRegistryImpl" />  
+
+	<!-- 用户服务 -->
+	<bean id="myUserDetailsService" class="com.squid.security.MyUserDetailsService"></bean>
+
+	<!-- 认证管理器 -->
+	<security:authentication-manager>
+		<security:authentication-provider
+			user-service-ref="myUserDetailsService">
+			<security:password-encoder ref="myEncoder">
+				<security:salt-source user-property="salt" />
+			</security:password-encoder>
+		</security:authentication-provider>
+	</security:authentication-manager>
+
+	<!-- 自定义加密 -->
+	<bean id="myEncoder" class="com.squid.security.MyPasswordEncode">
+		<constructor-arg value="md5" />
+	</bean>
+
+	<!-- 异常信息本地化 -->
+	<bean id="messageSource"
+		class="org.springframework.context.support.ReloadableResourceBundleMessageSource">
+		<property name="basename"
+			value="classpath:org/springframework/security/messages" />
+	</bean>
+
+</beans>
